@@ -3,6 +3,7 @@ package com.example.bevasarlolista
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.coroutineScope
@@ -16,7 +17,6 @@ import com.example.bevasarlolista.network.NetworkManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import retrofit2.await
-import java.util.Date
 
 class ListActivity : AppCompatActivity() {
 
@@ -24,7 +24,7 @@ class ListActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var currentUser: User
     private val items = mutableListOf<Item>()
-    private val itemsToShow = mutableListOf<Item>()
+    private val userMap = mutableMapOf<Int, String>() // Map to resolve user IDs to usernames
 
     companion object {
         private const val REQUEST_ADD_ITEM = 1
@@ -35,48 +35,19 @@ class ListActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
 
-        /*
-        val currentUser = intent.getSerializableExtra("currentUser") as? User
-        if (currentUser == null) {
-            Toast.makeText(this, "No user found, please log in", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-
-         */
-
         currentUser = UserLoggedIn.getUser() ?: run {
             Toast.makeText(this, "No user found, please log in", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        /*
-        currentUser = intent.getSerializableExtra("currentUser") as? User ?: run {
-            Toast.makeText(this, "No user found, please log in", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-        */
-
-
-
-
         recyclerView = findViewById(R.id.recyclerView)
         val fabAddItem: FloatingActionButton = findViewById(R.id.fabAddItem)
 
-        // Sample data
-        val user1 = User(1, "JohnDoe", "password123")
-        items.add(Item(1, "Apple", 5.0, 1.5, Date(), currentUser, null))
-        items.add(Item(2, "Banana", 3.0, 0.8, Date(), null, null))
-        this.lifecycle.coroutineScope.launch {
-            loadItems();
-        }
-
         // RecyclerView setup
-        itemAdapter = ItemAdapter(items, currentUser,
+        itemAdapter = ItemAdapter(items, currentUser, userMap,
             onItemChecked = { item, isChecked ->
-                item.checkedBy = if (isChecked) currentUser else null
+                item.checkedById = if (isChecked) currentUser.id else null
             },
             onItemClick = { item ->
                 val intent = Intent(this, AddEditItemActivity::class.java)
@@ -84,9 +55,8 @@ class ListActivity : AppCompatActivity() {
                 intent.putExtra("currentUser", currentUser)
                 startActivityForResult(intent, REQUEST_EDIT_ITEM)
             }
-
         )
-        //itemsToShow.addAll(items.filter { it.purchaseDate.before() })
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = itemAdapter
 
@@ -94,6 +64,12 @@ class ListActivity : AppCompatActivity() {
             val intent = Intent(this, AddEditItemActivity::class.java)
             intent.putExtra("currentUser", currentUser)
             startActivityForResult(intent, REQUEST_ADD_ITEM)
+        }
+
+        // Load items and users sequentially
+        this.lifecycle.coroutineScope.launch {
+            loadUsers() // Ensure userMap is populated
+            loadItems() // Now load items that depend on userMap
         }
     }
 
@@ -121,14 +97,25 @@ class ListActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun loadItems(){
+    private suspend fun loadItems() {
         try {
-            val items = NetworkManager.getItems().await();
-            this.items.clear();
-            this.items.addAll(items);
-        } catch (ex: Exception){
+            val response = NetworkManager.getItems().await()
+            Log.d("ListActivity", "Items loaded: $response")
+            items.clear()
+            items.addAll(response)
+            itemAdapter.notifyDataSetChanged()
+        } catch (ex: Exception) {
             Toast.makeText(this, ex.message ?: "Failed to load items", Toast.LENGTH_SHORT).show()
         }
     }
-}
 
+    private suspend fun loadUsers() {
+        try {
+            val users = NetworkManager.getUsers().await()
+            userMap.clear()
+            userMap.putAll(users.associateBy({ it.id }, { it.username })) // Map user IDs to usernames
+        } catch (ex: Exception) {
+            Toast.makeText(this, ex.message ?: "Failed to load users", Toast.LENGTH_SHORT).show()
+        }
+    }
+}

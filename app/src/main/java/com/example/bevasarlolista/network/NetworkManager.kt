@@ -1,5 +1,6 @@
 package com.example.bevasarlolista.network
 
+import android.util.Log
 import com.example.bevasarlolista.model.Item
 import com.example.bevasarlolista.model.User
 import com.google.gson.GsonBuilder
@@ -7,6 +8,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.Date
 import java.util.concurrent.TimeUnit
 
 object NetworkManager {
@@ -15,6 +17,9 @@ object NetworkManager {
     private var retrofit: Retrofit
     private lateinit var userApi: UserApi
     private lateinit var itemApi: ItemApi
+    val gson = GsonBuilder()
+        .setDateFormat("yyyy-MM-dd'T'HH:mm:ss") // Ensure dates are serialized as "yyyy-MM-dd"
+        .create()
 
     init {
 
@@ -23,13 +28,7 @@ object NetworkManager {
             .client(OkHttpClient.Builder()
                 .callTimeout(3, TimeUnit.SECONDS)
                 .build())
-            .addConverterFactory(
-                GsonConverterFactory.create(
-                    GsonBuilder()
-                        .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-                        //.registerTypeAdapter(Date::class.java, DateDeserializer())
-                        .create()
-                ))
+            .addConverterFactory(GsonConverterFactory.create(gson)) // Use the updated Gson
             .build()
 
         userApi = retrofit.create(UserApi::class.java)
@@ -45,8 +44,22 @@ object NetworkManager {
     fun getItems(): Call<List<Item>>{
         return itemApi.getItems()
     }
-
-    fun searchItem(id: Long): Call<Item?>? {
-        return itemApi.getItem(id)
+    fun getUsers(): Call<List<User>> {
+        return userApi.getUsers()
     }
+
+    fun addItem(item: Item): Call<Item> {
+        Log.d("AddItem", "Sending item: $item")
+        Log.d("AddItem", "Serialized payload: ${gson.toJson(item)}")
+        return itemApi.addItem(item)
+    }
+
+    fun updateItem(item: Item): Call<Item> {
+        Log.d("AddItem", "Sending item: $item")
+        Log.d("AddItem", "Serialized payload: ${gson.toJson(item)}")
+        return itemApi.updateItem(item.id, item)
+    }
+
+
+
 }

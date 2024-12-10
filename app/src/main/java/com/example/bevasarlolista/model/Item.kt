@@ -9,6 +9,6 @@ data class Item(
     val amount: Double,
     val price: Double,
     val purchaseDate: Date,
-    val forUser: User?,
-    var checkedBy: User?
+    val forUserId: Int?,
+    var checkedById: Int?
 ) : Serializable

@@ -64,8 +64,8 @@ class MainActivity : AppCompatActivity() {
     private suspend fun authenticateUser(username: String, password: String) {
         try {
             //navigateToListActivity(User(1, "asd", "asd"));
-            val user = users.find { it.username == username && it.password == password }
-            //val user = NetworkManager.authUser(username, password).await();
+            //val user = users.find { it.username == username && it.password == password }
+            val user = NetworkManager.authUser(username, password).await();
             if (user != null) {
                 navigateToListActivity(user)
             } else {

@@ -13,6 +13,7 @@ import com.example.bevasarlolista.model.User
 class ItemAdapter(
     private val items: List<Item>,
     private val currentUser: User, // Logged-in user
+    private val userMap: Map<Int, String>,
     private val onItemChecked: (Item, Boolean) -> Unit,
     private val onItemClick: (Item) -> Unit
 ) : RecyclerView.Adapter<ItemAdapter.ItemViewHolder>() {
@@ -38,10 +39,20 @@ class ItemAdapter(
 
         holder.itemName.text = item.name
         holder.itemAmount.text = "Amount: ${item.amount}"
-        holder.itemPrice.text = "Price: $${item.price}"
-        holder.itemCategory.text = if (item.forUser == null) "Shared" else "For: ${item.forUser.username}"
-        holder.itemCheckedBy.text = if (item.checkedBy != null) "Checked by: ${item.checkedBy!!.username}" else "Unchecked"
-        holder.itemCheckbox.isChecked = item.checkedBy == currentUser
+        holder.itemPrice.text = "Price: ${item.price} Ft"
+        holder.itemCategory.text = if (item.forUserId == null) {
+            "Shared"
+        } else {
+            "For: ${userMap[item.forUserId] ?: "Unknown"}"
+        }
+
+        // Resolve `checkedBy` to username or mark as "Unchecked"
+        holder.itemCheckedBy.text = if (item.checkedById != null) {
+            "Bought: ${userMap[item.checkedById] ?: "Unknown"}"
+        } else {
+            "Unchecked"
+        }
+        holder.itemCheckbox.isChecked = item.checkedById == currentUser.id
 
         // Handle checkbox interaction
         holder.itemCheckbox.setOnCheckedChangeListener { _, isChecked ->
