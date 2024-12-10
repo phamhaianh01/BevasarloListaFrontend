@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.coroutineScope
 import com.example.bevasarlolista.databinding.ActivityMainBinding
+import com.example.bevasarlolista.holder.UserLoggedIn
 import com.example.bevasarlolista.model.User
 import com.example.bevasarlolista.network.NetworkManager
 import com.example.bevasarlolista.network.UserApi
@@ -62,23 +63,25 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun authenticateUser(username: String, password: String) {
         try {
-            navigateToListActivity(User(1, "asd", "asd"));
-            /*val user = NetworkManager.authUser(username, password).await();
+            //navigateToListActivity(User(1, "asd", "asd"));
+            val user = users.find { it.username == username && it.password == password }
+            //val user = NetworkManager.authUser(username, password).await();
             if (user != null) {
                 navigateToListActivity(user)
             } else {
                 showToast("Invalid username or password")
-            }*/
+            }
         } catch (ex: Exception){
             showToast(ex.message ?: "Login failed");
         }
     }
 
     private fun navigateToListActivity(user: User) {
+        UserLoggedIn.setUser(user) // Add this line to set the logged-in user
         val intent = Intent(this, ListActivity::class.java)
-        intent.putExtra("currentUser", user)
         startActivity(intent)
     }
+
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()

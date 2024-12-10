@@ -28,6 +28,9 @@ object UserLoggedIn {
     }
 
      */
+    fun setUser(newUser: User) {
+        user.value = newUser
+    }
 
     fun getUser(): User?{
         return user.value

@@ -45,12 +45,12 @@ class ListActivity : AppCompatActivity() {
 
          */
 
-        currentUser = UserLoggedIn.getUser()!!
-        if(currentUser == null) {
+        currentUser = UserLoggedIn.getUser() ?: run {
             Toast.makeText(this, "No user found, please log in", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
+
         /*
         currentUser = intent.getSerializableExtra("currentUser") as? User ?: run {
             Toast.makeText(this, "No user found, please log in", Toast.LENGTH_SHORT).show()
