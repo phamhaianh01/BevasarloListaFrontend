@@ -27,11 +27,21 @@
         android:inputType="numberDecimal" />
 
     <!-- Checkbox to assign the item to currentUser -->
-    <CheckBox
-        android:id="@+id/cbForUser"
-        android:layout_width="wrap_content"
+
+    <AutoCompleteTextView
+        android:id="@+id/acForUserId"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Assign to me (current user)" />
+        android:hint="For User (Optional)"
+        android:inputType="text" />
+
+    <AutoCompleteTextView
+        android:id="@+id/acCheckedById"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Checked By (Optional)"
+        android:inputType="text" />
+
 
     <Button
         android:id="@+id/btnSave"

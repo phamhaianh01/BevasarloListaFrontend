@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bevasarlolista.R
@@ -11,10 +12,10 @@ import com.example.bevasarlolista.model.Item
 import com.example.bevasarlolista.model.User
 
 class ItemAdapter(
-    private val items: List<Item>,
+    private val items: MutableList<Item>,
     private val currentUser: User, // Logged-in user
     private val userMap: Map<Int, String>,
-    private val onItemChecked: (Item, Boolean) -> Unit,
+    private val onDeleteItem: (Item) -> Unit,
     private val onItemClick: (Item) -> Unit
 ) : RecyclerView.Adapter<ItemAdapter.ItemViewHolder>() {
 
@@ -24,7 +25,7 @@ class ItemAdapter(
         val itemPrice: TextView = itemView.findViewById(R.id.itemPrice)
         val itemCategory: TextView = itemView.findViewById(R.id.itemCategory)
         val itemCheckedBy: TextView = itemView.findViewById(R.id.itemCheckedBy)
-        val itemCheckbox: CheckBox = itemView.findViewById(R.id.itemCheckbox)
+        val itemDeleteButton: ImageButton = itemView.findViewById(R.id.itemDeleteButton)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
@@ -52,14 +53,19 @@ class ItemAdapter(
         } else {
             "Unchecked"
         }
-        holder.itemCheckbox.isChecked = item.checkedById == currentUser.id
+        holder.itemDeleteButton.setOnClickListener {
+            onDeleteItem(item) // Call the delete action
+        }
 
-        // Handle checkbox interaction
+        /*
+        // Checkbox interaction
         holder.itemCheckbox.setOnCheckedChangeListener { _, isChecked ->
             onItemChecked(item, isChecked)
         }
 
-        // Handle click interaction
+         */
+
+        // On Item click interaction
         holder.itemView.setOnClickListener {
             onItemClick(item)
         }
@@ -68,4 +74,12 @@ class ItemAdapter(
     }
 
     override fun getItemCount(): Int = items.size
+
+    fun removeItem(item: Item) {
+        val index = items.indexOfFirst { it.id == item.id }
+        if (index != -1) {
+            items.removeAt(index)
+            notifyItemRemoved(index) // Notify RecyclerView of item removal
+        }
+    }
 }

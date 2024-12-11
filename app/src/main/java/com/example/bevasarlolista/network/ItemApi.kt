@@ -3,6 +3,7 @@ package com.example.bevasarlolista.network
 import com.example.bevasarlolista.model.Item
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -22,6 +23,10 @@ interface ItemApi {
 
     @PUT("Item/{id}")
     fun updateItem(@Path("id") id: Int, @Body item: Item): Call<Item>
+
+    @DELETE("Item/{id}")
+    fun deleteItem(@Path("id") id: Int): Call<Void>
+
 
 
 

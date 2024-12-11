@@ -17,6 +17,7 @@ object NetworkManager {
     private var retrofit: Retrofit
     private lateinit var userApi: UserApi
     private lateinit var itemApi: ItemApi
+    private lateinit var calculationApi: CalculationApi
     val gson = GsonBuilder()
         .setDateFormat("yyyy-MM-dd'T'HH:mm:ss") // Ensure dates are serialized as "yyyy-MM-dd"
         .create()
@@ -33,6 +34,7 @@ object NetworkManager {
 
         userApi = retrofit.create(UserApi::class.java)
         itemApi = retrofit.create(ItemApi::class.java)
+        calculationApi = retrofit.create(CalculationApi::class.java)
     }
 
     //User
@@ -59,6 +61,16 @@ object NetworkManager {
         Log.d("AddItem", "Serialized payload: ${gson.toJson(item)}")
         return itemApi.updateItem(item.id, item)
     }
+
+    fun deleteItem(id: Int): Call<Void> {
+        return itemApi.deleteItem(id)
+    }
+
+    fun calculateMonthlyExpense(year: Int, month: Int, userId: Int): Call<Double> {
+        return calculationApi.getMonthlyExpense(year, month, userId)
+    }
+
+
 
 
 

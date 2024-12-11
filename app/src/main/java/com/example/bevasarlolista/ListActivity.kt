@@ -17,6 +17,7 @@ import com.example.bevasarlolista.network.NetworkManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import retrofit2.await
+import retrofit2.awaitResponse
 
 class ListActivity : AppCompatActivity() {
 
@@ -43,11 +44,12 @@ class ListActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.recyclerView)
         val fabAddItem: FloatingActionButton = findViewById(R.id.fabAddItem)
+        val fabCalculation: FloatingActionButton = findViewById(R.id.fabCalculation)
 
         // RecyclerView setup
         itemAdapter = ItemAdapter(items, currentUser, userMap,
-            onItemChecked = { item, isChecked ->
-                item.checkedById = if (isChecked) currentUser.id else null
+            onDeleteItem = { item ->
+                deletesItem(item)
             },
             onItemClick = { item ->
                 val intent = Intent(this, AddEditItemActivity::class.java)
@@ -65,6 +67,13 @@ class ListActivity : AppCompatActivity() {
             intent.putExtra("currentUser", currentUser)
             startActivityForResult(intent, REQUEST_ADD_ITEM)
         }
+
+        fabCalculation.setOnClickListener {
+            val intent = Intent(this, CalculationActivity::class.java)
+            intent.putExtra("currentUser", currentUser)
+            startActivity(intent)
+        }
+
 
         // Load items and users sequentially
         this.lifecycle.coroutineScope.launch {
@@ -118,4 +127,31 @@ class ListActivity : AppCompatActivity() {
             Toast.makeText(this, ex.message ?: "Failed to load users", Toast.LENGTH_SHORT).show()
         }
     }
+    private fun deletesItem(item: Item) {
+        lifecycle.coroutineScope.launch {
+            try {
+                val response = NetworkManager.deleteItem(item.id).awaitResponse()
+                if (response.isSuccessful) {
+                    Log.d("ListActivity", "Item deleted successfully")
+                    loadItems() // Refresh the list
+                    runOnUiThread {
+                        Toast.makeText(this@ListActivity, "Item deleted successfully", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Log.e("ListActivity", "Failed to delete item: ${response.errorBody()?.string()}")
+                    runOnUiThread {
+                        Toast.makeText(this@ListActivity, "Failed to delete item", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (ex: Exception) {
+                Log.e("ListActivity", "Error deleting item: ${ex.message}", ex)
+                runOnUiThread {
+                    Toast.makeText(this@ListActivity, "Error deleting item: ${ex.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+
+
 }

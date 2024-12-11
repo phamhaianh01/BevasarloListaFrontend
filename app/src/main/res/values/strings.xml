@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">BevasarloLista</string>
     <string name="add_item">Add Item</string>
+    <string name="delete_item" />
 </resources>

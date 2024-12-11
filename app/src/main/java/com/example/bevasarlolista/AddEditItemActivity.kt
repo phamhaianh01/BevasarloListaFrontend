@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bevasarlolista.databinding.ActivityAddEditItemBinding
@@ -14,13 +15,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.await
 import java.util.Date
 
 class AddEditItemActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAddEditItemBinding
-    private lateinit var currentUser: User // Pass the currentUser from ListActivity
-    private val ioScope = CoroutineScope(Dispatchers.IO) // Coroutine scope for backend communication
+    private lateinit var currentUser: User
+    private val ioScope = CoroutineScope(Dispatchers.IO)
+    private val userMap = mutableMapOf<String, Int>() // Map of usernames to user IDs
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,41 +31,78 @@ class AddEditItemActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val item = intent.getSerializableExtra("item") as? Item
-        currentUser = intent.getSerializableExtra("currentUser") as User // Get currentUser from intent
+        currentUser = intent.getSerializableExtra("currentUser") as User
+
         val isEditMode = item != null
 
         if (isEditMode) {
             binding.etItemName.setText(item?.name)
             binding.etItemAmount.setText(item?.amount.toString())
             binding.etItemPrice.setText(item?.price.toString())
-            binding.cbForUser.isChecked = item?.forUserId != null
+        }
+
+        // Load users into AutoCompleteTextView
+        ioScope.launch {
+            loadUsers()
+            withContext(Dispatchers.Main) {
+                setupUserAutoComplete(item)
+            }
         }
 
         binding.btnSave.setOnClickListener {
             val name = binding.etItemName.text.toString()
             val amount = binding.etItemAmount.text.toString().toDoubleOrNull() ?: 0.0
             val price = binding.etItemPrice.text.toString().toDoubleOrNull() ?: 0.0
-            //val date = DateConverter.convertToSimpleDate(item?.purchaseDate ?: Date())
-
 
             if (name.isBlank()) {
                 Toast.makeText(this, "Item name cannot be empty", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            val forUserId = userMap[binding.acForUserId.text.toString()]
+            val checkedById = userMap[binding.acCheckedById.text.toString()]
+
             val newItem = Item(
                 id = item?.id ?: 0,
                 name = name,
                 amount = amount,
                 price = price,
-                purchaseDate = item?.purchaseDate ?: Date(), // Ensure this is properly formatted as "yyyy-MM-dd"
-                forUserId = if (binding.cbForUser.isChecked) currentUser.id else null,
-                checkedById = null
+                purchaseDate = item?.purchaseDate ?: Date(),
+                forUserId = forUserId,
+                checkedById = checkedById
             )
 
-
-            // Save the item to the backend
             saveItem(newItem, isEditMode)
+        }
+    }
+
+    private suspend fun loadUsers() {
+        try {
+            val users = NetworkManager.getUsers().await()
+            users.forEach { user ->
+                userMap[user.username] = user.id
+            }
+        } catch (ex: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@AddEditItemActivity, "Failed to load users: ${ex.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun setupUserAutoComplete(item: Item?) {
+        val usernames = userMap.keys.toList()
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, usernames)
+
+        binding.acForUserId.setAdapter(adapter)
+        binding.acCheckedById.setAdapter(adapter)
+
+        // Pre-fill AutoCompleteTextView if editing
+        item?.forUserId?.let { id ->
+            binding.acForUserId.setText(userMap.entries.find { it.value == id }?.key ?: "")
+        }
+
+        item?.checkedById?.let { id ->
+            binding.acCheckedById.setText(userMap.entries.find { it.value == id }?.key ?: "")
         }
     }
 
@@ -77,10 +117,10 @@ class AddEditItemActivity : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        val resultItem = response.body() // Safely deserialize the response
+                        val resultItem = response.body()
                         if (resultItem != null) {
                             val resultIntent = Intent()
-                            resultIntent.putExtra("item", resultItem) // Use deserialized item
+                            resultIntent.putExtra("item", resultItem)
                             setResult(Activity.RESULT_OK, resultIntent)
                             Toast.makeText(
                                 this@AddEditItemActivity,
@@ -110,10 +150,9 @@ class AddEditItemActivity : AppCompatActivity() {
                         "Error: ${ex.message}",
                         Toast.LENGTH_SHORT
                     ).show()
-                    Log.e("AddEditItem", "Error saving item", ex) // Log the exception for debugging
+                    Log.e("AddEditItem", "Error saving item", ex)
                 }
             }
         }
     }
-
 }
